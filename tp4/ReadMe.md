@@ -169,7 +169,12 @@ ________________________________________________________________________________
       * [ username: devsecops2, password: devsecops2 ]
 
 
-```sql
+```sql create user dv1 identified by dev1;
+create user dev2 identified by dev2;
+create user tester1 identified by tester1;
+create user tester2 identified by tester2;
+create user devsecops1 identified by devsecops1;
+create user devsecops2 identified by devsecops2;
 ---
 ```
   --->  **Une fois qu'un utilisateur est créé, le DBA peut octroyer des privilèges de système spécifiques à cet utilisateur.**
@@ -183,7 +188,16 @@ ________________________________________________________________________________
      * Création de session.
      * Création,lecture, modification de structure et suppression de tables.
 
-```sql
+```sql grant 
+create procedure,
+create view,
+create sequence,
+create session,
+create any table,
+select any table,
+alter any table,
+drop any table 
+to dev1;
 ---
 ```
 
@@ -192,7 +206,16 @@ ________________________________________________________________________________
  
    - **Révoquer tous les privilèges associès à l'utilisateur dev1 :** 
 
-```sql
+```sql revoke
+create procedure,
+create view,
+create sequence,
+create session,
+create any table,
+select any table,
+alter any table,
+drop any table 
+to dev1;
 ---
 ```
 
@@ -215,16 +238,34 @@ ________________________________________________________________________________
      
      C) Le rôle de l'équipe DevSecOps permet d'avoir tous les privilèges avec mode administrateur de la base:  
 
-```sql
+```sql create role dev;
+       create role tester;
+---    create role DevSecOps;
+```
+```sql grant 
+ create procedure,
+ create view,
+ create sequence,
+ create session,
+ create any table,
+ select any table,
+ alter any table,
+ drop any table
+   to dev;
 ---
 ```
-```sql
+```sql grant 
+ connect,
+ create session,
+ select any table 
+   to tester;
 ---
 ```
-```sql
----
-```
-```sql
+```sql grant 
+all privileges
+to DevSecOps
+with admin option;
+
 ---
 ```
 
@@ -232,25 +273,37 @@ ________________________________________________________________________________
  
    - **Attribuer à chaque utilisateur, le rôle qui lui correspond:** 
   
+```sql grant dev 
+      to dev1,
+      dev2;
+---
+```
+```sql grant tester
+      to tester1,
+      tester2; 
+---
+```
+```sql grant DevSecOps
+      to devsecops1,
+      devsecops2;
+---
+```
 
-```sql
----
-```
-```sql
----
-```
-```sql
----
-```
 
    - **Limiter l'accès pour les testeurs de sorte qu'ils n'accèdent qu'à la table des employés "EMP":** 
   
 
-```sql
+```sql  revoke 
+ connect,
+ create session,
+ select any table 
+   from tester;
 ---
 ```
 
- ```sql
+ ```sql grant 
+ select on emp
+ to tester;
 ---
 ```
  
@@ -259,17 +312,20 @@ ________________________________________________________________________________
    - **Autoriser tous les utilisateurs sur le système pour interroger les données de la table EMP :** 
   
 
- ```sql
+```sql grant connect to tester;
 ---
 ```
 
 **Retirer les privilèges attribuées aux admins, ainsi que les utilisateurs qui ont reçu leurs privilèges sur la table EMP par un membre de l'équipe devsecops:**
 
  
- 
-```sql
+```sql revoke all privileges 
+      from DevSecOps;
+      revoke all privileges
+      on emp from DevSecOps;
 ---
 ```
+
 
 
 **Créer un profile de ressources dédié à l'équipe des développeurs avec les limitations suivantes:**
@@ -284,10 +340,18 @@ ________________________________________________________________________________
   * ***Nombre maximal de réutilisations de mot de passe:*** ***10***
 
 
-
-```sql 
----
+```sql create profile dev LIMIT
+---Sessions_per_user : UNLIMITED
+   cpu_per_session : 10000
+   cpu_per_call : 1000
+   connect_time : 45
+   Logical_read_per_session : DEFAULT
+   Logical_read_per_call : 1000
+   private_sga : 25000
+   password_life_time:60
+   password_reuse_time:10;
 ```
+
 
 
 
@@ -302,7 +366,16 @@ ________________________________________________________________________________
   * ***Taille maximale de l'SGA privée:*** ***25K***
   * ***Durée de vie en jours du mot de passe:*** ***60***
   * ***Nombre maximal de réutilisations de mot de passe:*** ***10***
-```sql 
+```sql create profile tester LIMIT
+   Sessions_per_user : 5
+   cpu_per_session : UNLIMITED
+   cpu_per_call : 3000
+   connect_time : 45
+   Logical_read_per_session : DEFAULT
+   Logical_read_per_call : 1000
+   private_sga : 25000
+   password_life_time:60
+   password_reuse_time:10;
 ---
 ```
 
@@ -317,12 +390,22 @@ ________________________________________________________________________________
   * ***Durée de vie en jours du mot de passe:*** ***60***
   * ***Nombre maximal de réutilisations de mot de passe:*** ***10***
 
-```sql 
+
+```sql create profile devsecops LIMIT
+   Sessions_per_user : UNLIMITED
+   cpu_per_session : UNLIMITED
+   cpu_per_call : 3000
+   connect_time : 3600
+   Logical_read_per_session : DEFAULT
+   Logical_read_per_call : 5000
+   private_sga : 80000
+   password_life_time:60
+   password_reuse_time:10;
 ---
 ```
 
   - **Attribuer à l'utilisateur "dev1", le profile qui lui correspond:** 
-```sql
+```sql alter user dev1 profile dev;
 ---
 ```
 
